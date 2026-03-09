@@ -1,272 +1,106 @@
-# iTerm2 Paste Image
+<p align="center">
+  <img src="logo.svg" width="128" height="128" alt="Paw">
+</p>
 
-[English](#english) | [中文](#中文)
-
----
-
-<a name="english"></a>
-
-An iTerm2 plugin that automatically detects images in your clipboard when you press `Cmd+V`. Instead of doing nothing (iTerm2's default behavior for images), it saves the image to a local directory and pastes the file path.
-
-Perfect for workflows where you need to reference images by path, such as:
-- AI coding assistants (Claude, GPT, etc.) that accept image paths
-- Markdown editing
-- File management tasks
-
-## Features
-
-- **Zero friction**: Just use `Cmd+V` as usual - the plugin detects if clipboard contains an image
-- **Configurable save directory**: Store images wherever you want
-- **Customizable output format**: Output just the path, filename, or a custom format
-- **Automatic filename**: Timestamps ensure unique filenames
-
-## Requirements
-
-- macOS
-- iTerm2 3.x
-- **iTerm2 Python API enabled** (required, see [Enable Python API](#enable-python-api))
-- (Optional) [pngpaste](https://github.com/jcsalterego/pngpaste) - faster image saving, falls back to native macOS tools
-
-## Installation
-
-### Quick Install
-
-```bash
-git clone https://github.com/ZhenningLang/iterm2-paste-image.git
-cd iterm2-paste-image
-./install.sh
-```
-
-### Manual Install
-
-1. Copy `paste_image.py` to `~/Library/Application Support/iTerm2/Scripts/`
-2. Create config directory: `mkdir -p ~/.config/iterm2-paste-image`
-3. Copy `config.example.json` to `~/.config/iterm2-paste-image/config.json`
-
-### Enable Python API
-
-1. Open iTerm2 → Settings (Cmd+,) → General → Magic
-2. Check **"Enable Python API"**
-   - **Require "Automation" permission**: Keep checked (recommended, more secure)
-   - **Allow all apps to connect**: Leave unchecked (not needed for this plugin)
-   - **Custom Python API Scripts Folder**: Leave unchecked (uses default `~/Library/Application Support/iTerm2/Scripts`)
-3. Restart iTerm2
-
-![Enable Python API](images/0-enable-python-api.png)
-
-### Start the Plugin
-
-1. Go to iTerm2 menu → Scripts → paste_image.py
-
-![Start Plugin](images/1-enable-paste-image-plugin.png)
-
-2. **First time only**: iTerm2 will prompt you to download its Python Runtime (~178 MB). This is required - click **Download**.
-
-![Download Python Runtime](images/2-download-python-runtime.png)
-
-> **Note**: iTerm2 uses its own bundled Python Runtime, not your system Python.
-
-### Auto-start
-
-The installer automatically configures the plugin to start with iTerm2. Just restart iTerm2 after installation.
-
-If you need to set up auto-start manually:
-
-```bash
-mkdir -p ~/Library/Application\ Support/iTerm2/Scripts/AutoLaunch
-ln -s ~/Library/Application\ Support/iTerm2/Scripts/paste_image.py \
-      ~/Library/Application\ Support/iTerm2/Scripts/AutoLaunch/paste_image.py
-```
-
-## Configuration
-
-Edit `~/.config/iterm2-paste-image/config.json`:
-
-```json
-{
-  "save_directory": "~/.iterm2-paste-image/images",
-  "filename_format": "%Y%m%d_%H%M%S",
-  "output_format": "{path}"
-}
-```
-
-### Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `save_directory` | Where to save images (supports `~`) | `~/.iterm2-paste-image/images` |
-| `filename_format` | strftime format for filename | `%Y%m%d_%H%M%S` |
-| `output_format` | Output template. Variables: `{path}`, `{filename}`, `{dir}` | `{path}` |
-
-### Output Format Examples
-
-- Full path: `"{path}"` → `/Users/me/.iterm2-paste-image/images/20240101_120000.png`
-- Filename only: `"{filename}"` → `20240101_120000.png`
-- Markdown: `"![image]({path})"` → `![image](/Users/me/.iterm2-paste-image/images/20240101_120000.png)`
-
-## How It Works
-
-1. Plugin monitors `Cmd+V` keystrokes via iTerm2 Python API
-2. When detected, checks if clipboard contains an image (PNG or TIFF)
-3. If image found:
-   - Saves to configured directory using `pngpaste` or native macOS APIs
-   - Sends the file path to the terminal
-   - Consumes the keystroke (prevents default paste behavior)
-4. If no image, lets iTerm2 handle the paste normally
-
-## Troubleshooting
-
-### Plugin doesn't start
-- Ensure Python API is enabled in iTerm2 Preferences
-- Check iTerm2 → Scripts menu for errors
-
-### Images not saving
-- Install pngpaste: `brew install pngpaste`
-- Check write permissions on save directory
-
-### Path not appearing
-- Verify the clipboard contains an image (try pasting in Preview first)
-- Check console output for errors: iTerm2 → Scripts → Manage → Console
-
-## License
-
-MIT License - see [LICENSE](LICENSE)
-
-## Contributing
-
-Contributions welcome! Please open an issue or PR.
+<h1 align="center">Paw</h1>
+<p align="center">终端文本增强插件 — 中文分词跳转 · 图片粘贴 · Cmd+Z 撤销</p>
 
 ---
 
-<a name="中文"></a>
+## 功能
 
-# iTerm2 Paste Image (中文)
+| 功能 | 按键 | 实现层 | 终端要求 |
+|------|------|--------|----------|
+| 中文分词跳转 | Option+←/→ | zsh widget + jieba daemon | 任意终端 (zsh) |
+| 中文分词删除 | Option+Delete | zsh widget + jieba daemon | 任意终端 (zsh) |
+| 剪贴板图片粘贴 | Cmd+V | iTerm2 Python 插件 | iTerm2 |
+| Cmd+Z 撤销 | Cmd+Z | iTerm2 plist 键映射 | iTerm2 |
 
-一个 iTerm2 插件，当你按下 `Cmd+V` 时自动检测剪贴板中的图片。与 iTerm2 默认行为（忽略图片）不同，它会将图片保存到本地目录并粘贴文件路径。
+### 中文分词跳转
 
-适用场景：
-- AI 编程助手（Claude、GPT 等）需要图片路径作为输入
-- Markdown 编辑
-- 文件管理任务
+在终端命令行中按 Option+Arrow 可以按中文词语跳转光标，而非逐字移动。基于 jieba 分词，常驻 daemon 通过 Unix socket 响应。
 
-## 功能特性
+### 图片粘贴
 
-- **零摩擦**：像往常一样使用 `Cmd+V`，插件自动检测剪贴板是否包含图片
-- **可配置保存目录**：自定义图片存储位置
-- **自定义输出格式**：输出完整路径、文件名或自定义格式
-- **自动命名**：使用时间戳确保文件名唯一
-
-## 系统要求
-
-- macOS
-- iTerm2 3.x 并启用 Python API
-- （可选）[pngpaste](https://github.com/jcsalterego/pngpaste) - 更快的图片保存，非必需（会自动回退到 macOS 原生工具）
+按 Cmd+V 时自动检测剪贴板中是否有图片，有则保存为文件并粘贴路径，无则正常粘贴文本。适用于 AI 编程助手、Markdown 编辑等场景。
 
 ## 安装
 
-### 快速安装
-
 ```bash
 git clone https://github.com/ZhenningLang/iterm2-paste-image.git
 cd iterm2-paste-image
 ./install.sh
 ```
 
-### 手动安装
+安装完成后运行 `paw` 管理功能。
 
-1. 复制 `paste_image.py` 到 `~/Library/Application Support/iTerm2/Scripts/`
-2. 创建配置目录：`mkdir -p ~/.config/iterm2-paste-image`
-3. 复制 `config.example.json` 到 `~/.config/iterm2-paste-image/config.json`
+### 前置条件
 
-### 启用 Python API
+- macOS
+- zsh（分词功能）
+- iTerm2 + Python API 已启用（图片粘贴 / Cmd+Z 功能）
+- (可选) [pngpaste](https://github.com/jcsalterego/pngpaste)：`brew install pngpaste`
 
-1. 打开 iTerm2 → Settings (Cmd+,) → General → Magic
-2. 勾选 **"Enable Python API"**
-   - **Require "Automation" permission**：保持勾选（推荐，更安全）
-   - **Allow all apps to connect**：不勾选（本插件不需要）
-   - **Custom Python API Scripts Folder**：不勾选（使用默认目录 `~/Library/Application Support/iTerm2/Scripts`）
-3. 重启 iTerm2
+### 启用 iTerm2 Python API
 
-![启用 Python API](images/0-enable-python-api.png)
+Settings (Cmd+,) → General → Magic → 勾选 **Enable Python API** → 重启 iTerm2
 
-### 启动插件
+## 使用
 
-1. 进入 iTerm2 菜单 → Scripts → paste_image.py
-
-![启动插件](images/1-enable-paste-image-plugin.png)
-
-2. **首次启动**：iTerm2 会提示下载 Python Runtime（约 178 MB），这是必需的，点击 **Download** 下载。
-
-![下载 Python Runtime](images/2-download-python-runtime.png)
-
-> **注意**：iTerm2 使用自带的 Python Runtime，而不是系统 Python。
-
-### 自动启动
-
-安装脚本已自动配置插件随 iTerm2 启动。安装后重启 iTerm2 即可。
-
-如需手动配置自动启动：
+### CLI 管理工具
 
 ```bash
-mkdir -p ~/Library/Application\ Support/iTerm2/Scripts/AutoLaunch
-ln -s ~/Library/Application\ Support/iTerm2/Scripts/paste_image.py \
-      ~/Library/Application\ Support/iTerm2/Scripts/AutoLaunch/paste_image.py
+paw              # 交互式主界面（查看状态、启停功能）
+paw status       # 非交互式状态查看
+paw diagnose     # 诊断 + 自动修复
+paw daemon start|stop|restart|status
 ```
 
-## 配置
+### 配置文件
 
-编辑 `~/.config/iterm2-paste-image/config.json`：
+`~/.config/paw/config.json`：
 
 ```json
 {
-  "save_directory": "~/.iterm2-paste-image/images",
-  "filename_format": "%Y%m%d_%H%M%S",
-  "output_format": "{path}"
+    "paste_image": {
+        "save_directory": "~/.config/paw/images",
+        "filename_format": "%Y%m%d_%H%M%S",
+        "output_format": "{path}"
+    }
 }
 ```
 
-### 配置项
-
 | 选项 | 说明 | 默认值 |
 |------|------|--------|
-| `save_directory` | 图片保存目录（支持 `~`） | `~/.iterm2-paste-image/images` |
-| `filename_format` | 文件名时间格式（strftime） | `%Y%m%d_%H%M%S` |
-| `output_format` | 输出模板，变量：`{path}`、`{filename}`、`{dir}` | `{path}` |
+| `save_directory` | 图片保存目录 | `~/.config/paw/images` |
+| `filename_format` | 文件名时间格式 (strftime) | `%Y%m%d_%H%M%S` |
+| `output_format` | 输出模板，变量：`{path}` `{filename}` `{dir}` | `{path}` |
 
-### 输出格式示例
+## 架构
 
-- 完整路径：`"{path}"` → `/Users/me/.iterm2-paste-image/images/20240101_120000.png`
-- 仅文件名：`"{filename}"` → `20240101_120000.png`
-- Markdown：`"![image]({path})"` → `![image](/Users/me/.iterm2-paste-image/images/20240101_120000.png)`
+```
+~/.config/paw/
+├── paw_cli.py          # CLI 管理工具
+├── paw_segmenter.py    # jieba 分词 daemon（Unix socket）
+├── paw.zsh             # zle widget + 按键绑定
+├── paw.py              # iTerm2 图片粘贴插件
+├── venv/               # Python 虚拟环境 (jieba)
+├── config.json         # 用户配置
+├── paw.sock            # daemon socket
+├── paw.pid             # daemon PID
+└── images/             # 粘贴的图片
+```
 
-## 工作原理
-
-1. 插件通过 iTerm2 Python API 监听 `Cmd+V` 按键
-2. 检测剪贴板是否包含图片（PNG 或 TIFF）
-3. 如果有图片：
-   - 使用 `pngpaste` 或原生 macOS API 保存到配置目录
-   - 将文件路径发送到终端
-   - 拦截按键（阻止默认粘贴行为）
-4. 如果没有图片，正常执行粘贴
+分词功能链路：`按键 → zsh widget → nc -U socket → jieba daemon → 返回新光标位置 → zle 更新`
 
 ## 常见问题
 
-### 插件无法启动
-- 确保 iTerm2 偏好设置中已启用 Python API
-- 检查 iTerm2 → Scripts 菜单是否有错误提示
+**Option+Arrow 没反应？**
+运行 `paw diagnose`，自动检测 daemon、zshrc、jieba 状态并修复。
 
-### 图片未保存
-- 安装 pngpaste：`brew install pngpaste`
-- 检查保存目录的写入权限
+**图片粘贴不工作？**
+确认 iTerm2 Python API 已启用，运行 `paw diagnose` 检查插件安装状态。
 
-### 路径未显示
-- 确认剪贴板中确实有图片（可先在预览中尝试粘贴）
-- 查看控制台输出：iTerm2 → Scripts → Manage → Console
+## License
 
-## 许可证
-
-MIT License - 详见 [LICENSE](LICENSE)
-
-## 贡献
-
-欢迎提交 Issue 或 PR！
+MIT
