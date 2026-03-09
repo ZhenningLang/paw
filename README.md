@@ -99,7 +99,7 @@ paw daemon start|stop|restart|status
 ├── paw.pid             # daemon PID
 └── images/             # 粘贴的图片
 
-~/Library/Application Support/tabby/plugins/tabby-paw/
+~/Library/Application Support/tabby/plugins/node_modules/tabby-paw/
 ├── package.json        # Tabby 插件描述
 └── dist/index.js       # Tabby 插件（Cmd+Z + 图片粘贴）
 ```

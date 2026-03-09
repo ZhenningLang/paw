@@ -32,7 +32,7 @@ function readClipboardImage (): Buffer | null {
             return image.toPNG()
         }
     } catch {
-        // electron clipboard not available either
+        // fallback not available either
     }
     return null
 }
@@ -47,14 +47,12 @@ export class PawTerminalDecorator extends TerminalDecorator {
     }
 
     attach (tab: BaseTerminalTabComponent<any>): void {
-        // Cmd+Z → send 0x1f (undo)
         this.subscribeUntilDetached(tab, this.hotkeys.hotkey$.subscribe(hotkey => {
             if (hotkey === 'paw:terminal-undo') {
                 tab.sendInput(Buffer.from([0x1f]).toString())
             }
         }))
 
-        // Override paste() to intercept clipboard images
         const origPaste = tab.paste.bind(tab)
         tab.paste = async () => {
             const imageData = readClipboardImage()

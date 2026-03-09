@@ -28,7 +28,7 @@ ITERM2_PLIST = HOME / "Library" / "Preferences" / "com.googlecode.iterm2.plist"
 ITERM2_SCRIPTS = HOME / "Library" / "Application Support" / "iTerm2" / "Scripts"
 ITERM2_AUTOLAUNCH = ITERM2_SCRIPTS / "AutoLaunch"
 TABBY_PLUGINS = HOME / "Library" / "Application Support" / "tabby" / "plugins"
-TABBY_PAW_PLUGIN = TABBY_PLUGINS / "tabby-paw"
+TABBY_PAW_PLUGIN = TABBY_PLUGINS / "node_modules" / "tabby-paw"
 # Source repo (where this script lives)
 REPO_DIR = Path(__file__).resolve().parent
 
