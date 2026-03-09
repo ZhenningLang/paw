@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@angular/core'
+import { Injectable } from '@angular/core'
 import { HotkeysService, ConfigService } from 'tabby-core'
 import { TerminalDecorator, BaseTerminalTabComponent } from 'tabby-terminal'
 import * as fs from 'fs'
@@ -13,6 +13,28 @@ function formatTimestamp (): string {
     const d = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+}
+
+function readClipboardImage (): Buffer | null {
+    try {
+        const remote = require('@electron/remote')
+        const image = remote.clipboard.readImage()
+        if (!image.isEmpty()) {
+            return image.toPNG()
+        }
+    } catch {
+        // @electron/remote not available
+    }
+    try {
+        const { clipboard } = require('electron')
+        const image = clipboard.readImage()
+        if (!image.isEmpty()) {
+            return image.toPNG()
+        }
+    } catch {
+        // electron clipboard not available either
+    }
+    return null
 }
 
 @Injectable()
@@ -32,24 +54,23 @@ export class PawTerminalDecorator extends TerminalDecorator {
             }
         }))
 
-        // Intercept paste → check for clipboard image
-        this.subscribeUntilDetached(tab, this.hotkeys.hotkey$.subscribe(async hotkey => {
-            if (hotkey === 'paste') {
-                await this.handlePaste(tab)
+        // Override paste() to intercept clipboard images
+        const origPaste = tab.paste.bind(tab)
+        tab.paste = async () => {
+            const imageData = readClipboardImage()
+            if (imageData) {
+                const filePath = this.saveImage(imageData)
+                if (filePath) {
+                    tab.sendInput(filePath)
+                    return
+                }
             }
-        }))
+            await origPaste()
+        }
     }
 
-    private async handlePaste (tab: BaseTerminalTabComponent<any>): Promise<void> {
+    private saveImage (imageData: Buffer): string | null {
         try {
-            const remote = require('@electron/remote')
-            const { clipboard } = remote
-            const image = clipboard.readImage()
-            if (image.isEmpty()) {
-                return
-            }
-
-            const imageData = image.toPNG()
             const cfg = this.config.store.paw?.pasteImage ?? {}
             const saveDir = expandHome(cfg.saveDirectory || '~/.config/paw/images')
 
@@ -62,14 +83,12 @@ export class PawTerminalDecorator extends TerminalDecorator {
             fs.writeFileSync(filepath, imageData)
 
             const fmt = cfg.outputFormat || '{path}'
-            const output = fmt
+            return fmt
                 .replace('{path}', filepath)
                 .replace('{filename}', filename)
                 .replace('{dir}', saveDir)
-
-            tab.sendInput(output)
-        } catch (e) {
-            // @electron/remote not available or other error — silently ignore
+        } catch {
+            return null
         }
     }
 }
