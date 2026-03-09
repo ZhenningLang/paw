@@ -32,6 +32,14 @@ read -p "  [3] Chinese word delete - Option+Delete (zsh widget)? [Y/n] " -n 1 -r
 echo
 WORD_DEL=${WORD_DEL:-Y}
 
+if $HAS_ITERM2; then
+    read -p "  [4] Cmd+Z undo in terminal (iTerm2 key mapping)? [Y/n] " -n 1 -r UNDO_MAP
+    echo
+    UNDO_MAP=${UNDO_MAP:-Y}
+else
+    UNDO_MAP=n
+fi
+
 echo
 
 mkdir -p "$CONFIG_DIR"
@@ -116,6 +124,39 @@ if [[ $PASTE_IMG =~ ^[Yy]$ ]] && $HAS_ITERM2; then
     echo "[OK] iTerm2 image paste plugin installed"
 
     mkdir -p "$CONFIG_DIR/images"
+fi
+
+# ── Cmd+Z undo key mapping ──
+
+if [[ $UNDO_MAP =~ ^[Yy]$ ]] && $HAS_ITERM2; then
+    python3 << 'PYEOF'
+import plistlib, os, sys
+
+plist_path = os.path.expanduser("~/Library/Preferences/com.googlecode.iterm2.plist")
+try:
+    with open(plist_path, "rb") as f:
+        data = plistlib.load(f)
+except Exception as e:
+    print(f"[Warning] Cannot read iTerm2 plist: {e}")
+    sys.exit(0)
+
+KEY = "0x7a-0x100000-0x6"  # Cmd+Z
+MAPPING = {"Action": 11, "Text": "0x1f", "Version": 2, "Apply Mode": 0, "Escaping": 2}
+changed = False
+
+for bookmark in data.get("New Bookmarks", []):
+    km = bookmark.setdefault("Keyboard Map", {})
+    if KEY not in km:
+        km[KEY] = MAPPING
+        changed = True
+        print(f'[OK] Added Cmd+Z → undo to profile "{bookmark.get("Name", "?")}"')
+    else:
+        print(f'[Skip] Cmd+Z already mapped in profile "{bookmark.get("Name", "?")}"')
+
+if changed:
+    with open(plist_path, "wb") as f:
+        plistlib.dump(data, f, fmt=plistlib.FMT_BINARY)
+PYEOF
 fi
 
 # ── Config file ──
