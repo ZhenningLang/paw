@@ -50,6 +50,21 @@ if ! command -v pngpaste &>/dev/null; then
     exit 0
 fi
 
+# Check if clipboard contains a file reference (e.g. file copied in Finder)
+# Must come before pngpaste check, because Finder also puts the file icon
+# as an image into the clipboard.
+file_path=$(osascript -e 'try
+return POSIX path of (the clipboard as «class furl»)
+on error
+return ""
+end try' 2>/dev/null) || true
+
+if [ -n "$file_path" ]; then
+    log "Pasted file path: $file_path"
+    tmux send-keys -l -- "$file_path"
+    exit 0
+fi
+
 if pngpaste - > /dev/null 2>&1; then
     mkdir -p "$SAVE_DIR"
     FILENAME="$(date +"$FILENAME_FORMAT").png"
